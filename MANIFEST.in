@@ -6,6 +6,7 @@ include .github/workflows/publish_pypi_test.yml
 include .gitignore
 include .npmignore
 include CHANGELOG.md
+include DEMO-MERGE-STRATEGY.md
 include LICENSE
 include MANIFEST.in
 include PKG-INFO
