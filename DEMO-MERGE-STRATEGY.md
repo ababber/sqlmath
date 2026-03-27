@@ -29,6 +29,17 @@ git checkout demo/merge-pr3-then-pr1
 /path/to/shadow-sqlmath/run-staging-ci.sh
 ```
 
+## GitHub compare (this fork)
+
+- **Golden path (beta + #3 + #1):**  
+  https://github.com/ababber/sqlmath/compare/beta...demo/merge-pr3-then-pr1
+- **Contrast (beta + #1 only):**  
+  https://github.com/ababber/sqlmath/compare/beta...demo/merge-pr1-only-on-beta
+
+## Upstream note
+
+After **#3** is on `sqlmath/sqlmath` `beta`, refresh **#1** (merge `beta` into `docs/readme-rewrite` or open a new PR from an updated branch) so the README lands on top of fixed `setup.py` / `.ci.sh` / Node tooling. If Git reports conflicts on those files, **keep the versions from #3**.
+
 ---
 
 *Branch and doc for reviewer demo; close or delete after upstream merges.*
