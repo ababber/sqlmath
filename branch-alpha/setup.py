@@ -27,8 +27,8 @@ python setup.py bdist_wheel
 python setup.py build_ext
 """
 
-__version__ = "2026.3.1"
-__version_info__ = ("2026", "3", "1")
+__version__ = "2026.4.1"
+__version_info__ = ("2026", "4", "1")
 
 import asyncio
 import base64
@@ -36,6 +36,7 @@ import hashlib
 import json
 import os
 import pathlib
+import platform
 import re
 import shutil
 import subprocess
@@ -71,15 +72,11 @@ async def build_ext_async():
                 file_src = pathlib.Path("sqlmath_external_sqlite.c")
             case "SRC_SQLMATH_BASE":
                 file_src = pathlib.Path("sqlmath_base.c")
-            case "SRC_SQLMATH_CUSTOM":
-                file_src = pathlib.Path("sqlmath_custom.c")
                 arg_list += [
                     "-DSRC_SQLMATH_PYTHON_C2=",
                 ]
         match cdefine:
             case "SRC_SQLMATH_BASE":
-                pass
-            case "SRC_SQLMATH_CUSTOM":
                 pass
             case _:
                 if (
@@ -98,10 +95,7 @@ async def build_ext_async():
             arg_list += ["/W3"]
         elif npm_config_mode_debug:
             arg_list += cflag_wall_list
-        elif is_win32 and cdefine in [
-            "SRC_SQLMATH_BASE",
-            "SRC_SQLMATH_CUSTOM",
-        ]:
+        elif is_win32 and cdefine == "SRC_SQLMATH_BASE":
             arg_list += [
                 "/W4",
                 "/WX",
@@ -111,10 +105,7 @@ async def build_ext_async():
                 "/W2",
                 "/WX",
             ]
-        elif cdefine in [
-            "SRC_SQLMATH_BASE",
-            "SRC_SQLMATH_CUSTOM",
-        ]:
+        elif cdefine == "SRC_SQLMATH_BASE":
             arg_list += cflag_wall_list
         else:
             arg_list += cflag_wno_list
@@ -165,7 +156,6 @@ async def build_ext_async():
             "build/SRC_SQLITE_BASE.obj",
             # ,
             "build/SRC_SQLMATH_BASE.obj",
-            "build/SRC_SQLMATH_CUSTOM.obj",
         ]
         export = "PyInit__sqlmath"
         if is_win32:
@@ -331,7 +321,6 @@ async def build_ext_async():
             "SRC_SQLITE_BASE",
             # ,
             "SRC_SQLMATH_BASE",
-            "SRC_SQLMATH_CUSTOM",
         ]
     ])
     #
@@ -600,6 +589,24 @@ def env_vcvarsall():
     return env
 
 
+def lib_platform_arch_ext():
+    """This function will return f"{platform}_{arch}.{extension}"."""
+    lib_arch = (
+        platform.machine()
+        .lower()
+        .replace("aarch64", "arm64")
+        .replace("amd64", "x64")
+        .replace("x86_64", "x64")
+    )
+    lib_platform = sys.platform
+    lib_ext = "so"
+    if lib_platform == "darwin":
+        lib_ext = "dylib"
+    if lib_platform == "win32":
+        lib_ext = "dll"
+    return f"{lib_platform}_{lib_arch}.{lib_ext}"
+
+
 def main():
     """This function will run main-program."""
     match sys.argv[1]:
@@ -644,11 +651,7 @@ class SetupError(Exception):
     """Setup error."""
 
 
-FILE_LIB_LGBM = (
-    "lib_lightgbm.dylib" if sys.platform == "darwin"
-    else "lib_lightgbm.dll" if sys.platform == "win32"
-    else "lib_lightgbm.so"
-)
+FILE_LIB_LGBM = f"lib_lightgbm_{lib_platform_arch_ext()}"
 FILE_LIB_SQLMATH = f"_sqlmath{sysconfig.get_config_var('EXT_SUFFIX')}"
 
 
