@@ -21,8 +21,8 @@
 
 """sqlmath.py."""
 
-__version__ = "2026.3.1"
-__version_info__ = ("2026", "3", "1")
+__version__ = "2026.4.31"
+__version_info__ = ("2026", "4", "31")
 
 import csv
 import io
@@ -105,6 +105,37 @@ class SqlmathDb:
     closed = False
     filename = ""
     ptr = 0
+
+    def __bool__(self):
+        """Return True if database is open."""
+        return not self.closed
+
+    def __enter__(self):
+        """Enter context manager."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit context manager and close database."""
+        db_close(self)
+        return False
+
+    def close(self):
+        """Close database connection. Alias for db_close(self)."""
+        db_close(self)
+
+    def __repr__(self):
+        """Return string representation for debugging."""
+        state = "closed" if self.closed else "open"
+        return f"SqlmathDb({self.filename!r}, {state})"
+
+    def execute(self, sql, bind_list=None, response_type=None):
+        """Execute SQL statement. Alias for db_exec(db=self, ...)."""
+        return db_exec(
+            db=self,
+            sql=sql,
+            bind_list=bind_list,
+            response_type=response_type,
+        )
 
 
 class SqlmathError(Exception):
@@ -385,10 +416,7 @@ PRAGMA busy_timeout = {timeout_busy};
             """,
         )
         # LGBM_DLOPEN
-        lib_lgbm = platform.system()
-        lib_lgbm = lib_lgbm.replace("Darwin", "lib_lightgbm.dylib")
-        lib_lgbm = lib_lgbm.replace("Linux", "lib_lightgbm.so")
-        lib_lgbm = lib_lgbm.replace("Windows", "lib_lightgbm.dll")
+        lib_lgbm = f"lib_lightgbm_{lib_platform_arch_ext()}"
         lib_lgbm = pathlib.Path(__file__).resolve().parent / lib_lgbm
         if lib_lgbm.exists():
             db_exec(
@@ -798,6 +826,24 @@ def json_row_list_from_csv(csv_text):
         skipinitialspace=False,
     )
     return [row for row in reader if row]
+
+
+def lib_platform_arch_ext():
+    """This function will return f"{platform}_{arch}.{extension}"."""
+    lib_arch = (
+        platform.machine()
+        .lower()
+        .replace("aarch64", "arm64")
+        .replace("amd64", "x64")
+        .replace("x86_64", "x64")
+    )
+    lib_platform = sys.platform
+    lib_ext = "so"
+    if lib_platform == "darwin":
+        lib_ext = "dylib"
+    if lib_platform == "win32":
+        lib_ext = "dll"
+    return f"{lib_platform}_{lib_arch}.{lib_ext}"
 
 
 def objectdeepcopywithkeyssorted(obj):

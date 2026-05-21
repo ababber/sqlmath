@@ -128,7 +128,7 @@ let {
 let sqlMessageDict = {}; // dict of web-worker-callbacks
 let sqlMessageId = 0;
 let sqlWorker;
-let version = "v2026.3.1";
+let version = "v2026.4.31";
 
 async function assertErrorThrownAsync(asyncFunc, regexp) {
 
@@ -327,7 +327,6 @@ async function ciBuildExt({
             (`
 (set -e
     # rebuild binding
-    rm -rf build/Release/obj/SRC_SQLMATH_CUSTOM/
     node "${binNodegyp}" build --release
     # node "${binNodegyp}" build --release --loglevel=verbose
     mv build/Release/binding.node "${cModulePath}"
@@ -339,7 +338,7 @@ async function ciBuildExt({
         rm -f ${SQLMATH_EXE}
         python setup.py exe_link \
             ./build/Release/SRC_SQLITE_BASE.lib \
-            ./build/Release/SRC_SQLMATH_CUSTOM.lib \
+            ./build/Release/SRC_SQLMATH_BASE.lib \
             ./build/Release/obj/shell/sqlmath_external_sqlite.obj \
             ./zlib.v1.3.1.vcpkg.x64-windows-static.lib \
             \
@@ -424,17 +423,15 @@ SQLMATH_CFLAG_WNO_LIST=" \\
             },
             {
                 "defines": [
-                    "SRC_SQLMATH_BASE_C2",
-                    "SRC_SQLMATH_CUSTOM_C2"
+                    "SRC_SQLMATH_BASE_C2"
                 ],
                 "dependencies": [
                     "SRC_SQLITE_BASE"
                 ],
                 "sources": [
-                    "sqlmath_base.c",
-                    "sqlmath_custom.c"
+                    "sqlmath_base.c"
                 ],
-                "target_name": "SRC_SQLMATH_CUSTOM",
+                "target_name": "SRC_SQLMATH_BASE",
                 "type": "static_library"
             },
             {
@@ -442,7 +439,7 @@ SQLMATH_CFLAG_WNO_LIST=" \\
                     "SRC_SQLMATH_NODEJS_C2"
                 ],
                 "dependencies": [
-                    "SRC_SQLMATH_CUSTOM"
+                    "SRC_SQLMATH_BASE"
                 ],
                 "sources": [
                     "sqlmath_base.c"
@@ -465,7 +462,7 @@ SQLMATH_CFLAG_WNO_LIST=" \\
                     "SRC_SQLITE_SHELL_C2"
                 ],
                 "dependencies": [
-                    "SRC_SQLMATH_CUSTOM"
+                    "SRC_SQLMATH_BASE"
                 ],
                 "sources": [
                     "sqlmath_external_sqlite.c"
@@ -1059,11 +1056,7 @@ PRAGMA busy_timeout = ${timeoutBusy};
             }),
             // LGBM_DLOPEN
             (async function () {
-                let libLgbm;
-                libLgbm = process.platform;
-                libLgbm = libLgbm.replace("darwin", "lib_lightgbm.dylib");
-                libLgbm = libLgbm.replace("win32", "lib_lightgbm.dll");
-                libLgbm = libLgbm.replace(process.platform, "lib_lightgbm.so");
+                let libLgbm = `lib_lightgbm_${libPlatformArchExt()}`;
                 libLgbm = `${import.meta.dirname}/sqlmath/${libLgbm}`;
                 await moduleFs.promises.access(
                     libLgbm
@@ -1679,6 +1672,16 @@ function jsonRowListFromCsv({
     return rowList;
 }
 
+function libPlatformArchExt() {
+    let libArch = process.arch;
+    let libExt = process.platform;
+    let libPlatform = process.platform;
+    libExt = libExt.replace("darwin", "dylib");
+    libExt = libExt.replace("win32", "dll");
+    libExt = libExt.replace(libPlatform, "so");
+    return `${libPlatform}_${libArch}.${libExt}`;
+}
+
 function listOrEmptyList(list) {
 
 // This function will return <list> or empty-list if falsy.
@@ -1906,7 +1909,11 @@ function waitAsync(timeout) {
 // This function will wait <timeout> ms.
 
     return new Promise(function (resolve) {
-        setTimeout(resolve, timeout * !npm_config_mode_test);
+        let ms = Number(timeout);
+        if (!Number.isFinite(ms)) {
+            ms = 0;
+        }
+        setTimeout(resolve, ms * !npm_config_mode_test);
     });
 }
 
@@ -1978,6 +1985,7 @@ export {
     fsWriteFileUnlessTest,
     jsbatonGetInt64,
     jsbatonGetString,
+    libPlatformArchExt,
     listOrEmptyList,
     noop,
     objectDeepCopyWithKeysSorted,

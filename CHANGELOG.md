@@ -1,9 +1,32 @@
 # Changelog
 
 # Todo
-- sqlmath - Re-introduce sliding-discrete-fourier-transform to improve initial guess in sql-function WIN_SINEFIT2().
+- sqlmath - Streamline and optimize sql-function WIN_SINEFIT2().
 - sqlite - Add similar error-handling from builtin-sql-function PERCENTILE() into custom-sql-function QUANTILE().
 - none
+
+# v2026.4.31
+- sqlmath-npm - bugfix - Fix missing lib_lightgbm pre-built libraries in npm-package. - part3 - ./sqlmath/lib_lightgbm_xxx.
+- sqlmath-npm - bugfix - Fix missing lib_lightgbm pre-built libraries in npm-package. - part2 - git checkout origin/artifact branch-beta/
+
+# v2026.4.30
+- sqlmath-python - Add context manager and Pythonic API (execute, close) to SqlmathDb matching sqlite3 conventions.
+- sqlmath-python - Add __repr__ and __bool__ methods to SqlmathDb for better debugging experience.
+- sqlmath - Remove under-used custom-files sqlmath_custom.c, sqlmath_custom.mjs.
+- github-ci - Pin various github-runner-os to stable/lts version.
+- sqlmath-demo - Change historical charts from 5-years to 3-years.
+- sqlmath-npm - bugfix - Fix missing lib_lightgbm pre-built libraries in npm-package.
+- sqlmath-doc - Rewrite README with examples, API reference, use cases.
+
+# v2026.3.31
+- python-ci - bugfix - Fix shell-function shCiBaseCustom() always skipping python setup.py build_ext.
+- ci - Speed-up windows-ci by replacing windows-latest with windows-2022.
+- sqlmath-ci - Speed-up ci with env-var npm_config_mode_test_nopython, allowing shell-function shCiTestNodejs() to be run in background, parallel to python -m cibuildwheel.
+- sqlmath-ci - Rename pre-built-binaries lib_lightgbm.xxx, libomp.xxx to lib_lightgbm_platform_arch.xxx, libomp_platform_arch.xxx, to prevent name-collision under darwin_arm64 and darwin_x64 builds.
+- sqlmath-ci - Update file setup.py to open text-files with utf-8 encoding.
+- sqlmath-ci - Update file .github/workflows/ci.yml with extra matrix.os macos-15-intel.
+- jslint-ci - Update shell-function shGitPullrequestCleanup() to allow squash-and-merge pull-request.
+- sqlmath-ci - Update file .github/workflows/ci.yml with hook to run on pull-request.
 
 # v2026.3.1
 - sqlmath-python - bugfix - Fix 762-character-limit SQL-string-bug in python-function db_exec().
