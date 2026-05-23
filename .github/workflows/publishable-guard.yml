@@ -1,0 +1,112 @@
+# Publishable fork guard — server-side enforcement
+# Blocks internal vocabulary from public ababber forks
+#
+# Source: cursor-custom-architecture/cursor-scripts/templates/publishable-guard-workflow.yml
+# Mirrors: cursor-scripts/publishable-fork-guard.sh (local hook)
+#
+# Copy to: .github/workflows/publishable-guard.yml in public forks
+
+name: Publishable guard
+
+on:
+  push:
+    branches: [main, master, beta]
+  pull_request:
+    branches: [main, master, beta]
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for internal vocabulary
+        run: |
+          set -euo pipefail
+
+          # Forbidden paths — these files must never exist in public forks
+          FORBIDDEN_PATHS=(
+            ".cursorrules"
+            ".toolrules"
+            ".focusrules"
+            "commit-manifest.json"
+          )
+
+          # Forbidden content patterns — grep -E (extended regex)
+          FORBIDDEN_PATTERNS=(
+            "shadow[ -]fleet"
+            "shadow-architecture"
+            "shadow architecture"
+            "cursor-custom-architecture"
+            "Intent Integrity"
+            "\\.focus/"
+            "trust_verify"
+            "ckexpand"
+            "shadow-save"
+            "ababber/shadow-"
+            "Purpose \\(shadow\\)"
+            "kit v1"
+            "TRUST:OK"
+            "TRUST:CHALLENGE"
+          )
+
+          # Files exempt from content scanning (legitimately mention redirect repos or contain pattern lists)
+          EXEMPT_FILES=(
+            "FORK-MAINTENANCE.md"
+            ".githooks/pre-commit"
+            ".github/workflows/publishable-guard.yml"
+          )
+
+          VIOLATIONS=()
+
+          echo "::group::Checking forbidden paths"
+          for fp in "${FORBIDDEN_PATHS[@]}"; do
+            if [[ -e "$fp" ]]; then
+              VIOLATIONS+=("path: $fp exists")
+              echo "::error file=$fp::Forbidden path: $fp"
+            fi
+          done
+          echo "::endgroup::"
+
+          echo "::group::Checking content patterns"
+          # Build exempt pattern for grep -v
+          EXEMPT_PATTERN=$(printf "|%s" "${EXEMPT_FILES[@]}")
+          EXEMPT_PATTERN="${EXEMPT_PATTERN:1}"  # Remove leading |
+
+          # Get all tracked files except exempt ones
+          FILES=$(git ls-files | grep -Ev "^($EXEMPT_PATTERN)$" || true)
+
+          if [[ -n "$FILES" ]]; then
+            for pat in "${FORBIDDEN_PATTERNS[@]}"; do
+              # Use grep -l to find files containing pattern, then report
+              MATCHES=$(echo "$FILES" | xargs grep -l -E "$pat" 2>/dev/null || true)
+              if [[ -n "$MATCHES" ]]; then
+                while IFS= read -r f; do
+                  VIOLATIONS+=("content: $f matches /$pat/")
+                  echo "::error file=$f::Forbidden pattern: $pat"
+                done <<< "$MATCHES"
+              fi
+            done
+          fi
+          echo "::endgroup::"
+
+          if [[ ${#VIOLATIONS[@]} -gt 0 ]]; then
+            echo ""
+            echo "========================================="
+            echo "PUBLISHABLE-FORK-GUARD: BLOCKED"
+            echo "========================================="
+            echo "Internal vocabulary detected in public fork."
+            echo "These belong in the private shadow-* repo."
+            echo ""
+            for v in "${VIOLATIONS[@]}"; do
+              echo "  - $v"
+            done
+            echo ""
+            echo "See FORK-MAINTENANCE.md for guidance."
+            exit 1
+          fi
+
+          echo "Publishable guard: OK"

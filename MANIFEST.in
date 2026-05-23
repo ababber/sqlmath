@@ -1,11 +1,14 @@
 include .ci.sh
 include .gitconfig
+include .githooks/pre-commit
 include .github/workflows/ci.yml
 include .github/workflows/publish.yml
 include .github/workflows/publish_pypi_test.yml
+include .github/workflows/publishable-guard.yml
 include .gitignore
 include .npmignore
 include CHANGELOG.md
+include FORK-MAINTENANCE.md
 include LICENSE
 include MANIFEST.in
 include PKG-INFO

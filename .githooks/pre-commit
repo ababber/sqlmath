@@ -1,0 +1,21 @@
+#!/usr/bin/env zsh
+# Public fork guard — blocks internal vocabulary before commit (see FORK-MAINTENANCE.md)
+
+emulate -L zsh
+setopt ERR_EXIT NO_UNSET PIPE_FAIL
+
+typeset REPO_ROOT hook guard
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+hook="${REPO_ROOT}/.githooks/pre-commit"
+
+for guard in \
+  "${PUBLISHABLE_GUARD_SCRIPT:-}" \
+  "${REPO_ROOT}/../../cursor-scripts/publishable-fork-guard.sh" \
+  "${HOME}/cursor-custom-architecture/cursor-scripts/publishable-fork-guard.sh"; do
+  [[ -n "$guard" && -f "$guard" ]] && exec zsh "$guard"
+done
+
+print -r -- "PUBLISHABLE-FORK-GUARD: cursor-scripts/publishable-fork-guard.sh not found." >&2
+print -r -- "  Set PUBLISHABLE_GUARD_SCRIPT or clone kit at cursor-custom-architecture." >&2
+print -r -- "  From shadow-sqlmath: ./install-publishable-hooks.sh" >&2
+exit 1
